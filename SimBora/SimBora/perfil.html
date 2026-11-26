@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimBora! — Perfil</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="mobile-frame">
+    <div class="screen-scroll">
+      <div class="kicker">Sua conta</div>
+      <h1 class="title-main" style="margin:4px 0 18px 0;">Meu Perfil</h1>
+
+      <div class="vibe-box" style="text-align:center; padding:24px 16px;">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--soft-tint); color:var(--accent); font-size:26px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;" id="avatar-inicial">
+          A
+        </div>
+        <h2 style="color:var(--ink); font-size:18px;" id="perfil-nome">Avaliador IHC</h2>
+        <p class="subtitle" id="perfil-email">professor@simbora.app</p>
+      </div>
+
+      <h2 class="section-title">Suas contribuições</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="vibe-box" style="text-align:center;">
+          <strong style="font-size:22px; color:var(--accent);" id="stat-avaliacoes">0</strong>
+          <p class="subtitle">Avaliações feitas</p>
+        </div>
+        <div class="vibe-box" style="text-align:center;">
+          <strong style="font-size:22px; color:var(--accent);" id="stat-favoritos">0</strong>
+          <p class="subtitle">Locais salvos</p>
+        </div>
+      </div>
+
+      <button id="btn-sair" style="width:100%; margin-top:28px; padding:14px; border-radius:var(--radius-md); border:1px solid #FCA5A5; background:#FEF2F2; color:#DC2626; font-weight:600; font-size:14px; cursor:pointer;">
+        Sair da Conta
+      </button>
+    </div>
+  </main>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderBottomNav('perfil');
+    const user = JSON.parse(localStorage.getItem('simbora_user') || '{"id":1,"nome":"Avaliador IHC","email":"professor@simbora.app"}');
+
+    document.getElementById('perfil-nome').textContent = user.nome;
+    document.getElementById('perfil-email').textContent = user.email;
+    document.getElementById('avatar-inicial').textContent = user.nome.charAt(0).toUpperCase();
+
+    async function carregarEstatisticas() {
+      const { count: cAval } = await supabaseClient.from('avaliacoes').select('id', { count: 'exact' }).eq('usuario_id', user.id);
+      const { count: cFav } = await supabaseClient.from('favoritos').select('id', { count: 'exact' }).eq('usuario_id', user.id);
+      document.getElementById('stat-avaliacoes').textContent = cAval ?? 0;
+      document.getElementById('stat-favoritos').textContent = cFav ?? 0;
+    }
+
+    document.getElementById('btn-sair').addEventListener('click', () => {
+      localStorage.removeItem('simbora_user');
+      window.location.href = 'index.html';
+    });
+
+    carregarEstatisticas();
+  </script>
+</body>
+</html>

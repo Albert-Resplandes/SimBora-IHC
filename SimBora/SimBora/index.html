@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimBora! — Boas-vindas e Acesso</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="mobile-frame" style="padding: 32px 24px; justify-content: space-between;">
+    <header style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="brand-logo">SimBora!</div>
+      <button id="btn-pular" style="background:none; border:none; color:var(--muted); font-size:12px; font-weight:600; cursor:pointer;">Pular →</button>
+    </header>
+
+    <section id="slide-content" style="text-align: center;">
+      <h1 class="title-main" id="slide-title">Seu próximo passeio começa aqui.</h1>
+      <p class="subtitle" id="slide-desc">Entre e descubra lugares que são a sua cara.</p>
+
+      <div id="login-box" style="display: none; margin-top: 22px; text-align: left;">
+        <div id="campo-nome-wrap" style="display:none; margin-bottom:10px;">
+          <input type="text" id="nome" placeholder="Seu nome completo"
+                 style="width:100%; padding:13px 14px; border-radius:16px; border:1px solid var(--line); font-size:14px;">
+        </div>
+        <input type="email" id="email" placeholder="Seu e-mail" value="professor@simbora.app"
+               style="width:100%; padding:13px 14px; border-radius:16px; border:1px solid var(--line); margin-bottom:10px; font-size:14px;">
+        <input type="password" id="senha" placeholder="Sua senha" value="123456"
+               style="width:100%; padding:13px 14px; border-radius:16px; border:1px solid var(--line); font-size:14px;">
+
+        <p id="status-msg" style="font-size: 12px; color: var(--accent); margin-top: 10px; text-align: center; min-height:16px;"></p>
+
+        <div style="text-align:center; margin-top:10px;">
+          <button type="button" id="toggle-modo" style="background:none; border:none; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;">
+            Não tem conta? Cadastre-se agora
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div id="dots" style="display:flex; justify-content:center; gap:6px; margin-bottom:20px;">
+        <span class="dot" style="width:16px; height:6px; border-radius:4px; background:var(--accent);"></span>
+        <span class="dot" style="width:6px; height:6px; border-radius:4px; background:var(--line);"></span>
+        <span class="dot" style="width:6px; height:6px; border-radius:4px; background:var(--line);"></span>
+        <span class="dot" style="width:6px; height:6px; border-radius:4px; background:var(--line);"></span>
+      </div>
+      <button class="btn-primary" id="btn-next">Prosseguir →</button>
+    </footer>
+  </main>
+
+  <script src="js/supabase-config.js"></script>
+  <script>
+    const slides = [
+      { title: "Seu próximo passeio começa aqui.", desc: "Entre e descubra lugares que são a sua cara." },
+      { title: "Encontre o local perfeito pro seu rolê!", desc: "Para todos os tipos e tamanhos de lugares e grupos." },
+      { title: "Esteja por dentro dos segredos da casa.", desc: "Dicas e avisos para se preparar antes de escolher." },
+      { title: "Mostre a todos o que você achou do lugar.", desc: "Avalie e deixe suas experiências e dicas do local." },
+      { title: "Pronto para escolher? Vamos!", desc: "Entre ou crie sua conta para começar.", login: true }
+    ];
+    let step = 0;
+    let modoCadastro = false;
+
+    function mostrarLogin() {
+      step = slides.length - 1;
+      document.getElementById('slide-title').textContent = slides[step].title;
+      document.getElementById('slide-desc').textContent = slides[step].desc;
+      document.getElementById('login-box').style.display = 'block';
+      document.getElementById('dots').style.display = 'none';
+      document.getElementById('btn-pular').style.visibility = 'hidden';
+      document.getElementById('btn-next').textContent = 'Entrar no SimBora!';
+    }
+
+    document.getElementById('btn-pular').addEventListener('click', mostrarLogin);
+
+    document.getElementById('toggle-modo').addEventListener('click', () => {
+      modoCadastro = !modoCadastro;
+      document.getElementById('campo-nome-wrap').style.display = modoCadastro ? 'block' : 'none';
+      document.getElementById('btn-next').textContent = modoCadastro ? 'Criar Conta e Entrar' : 'Entrar no SimBora!';
+      document.getElementById('toggle-modo').textContent = modoCadastro ? 'Já tenho conta? Fazer login' : 'Não tem conta? Cadastre-se agora';
+      document.getElementById('status-msg').textContent = '';
+    });
+
+    document.getElementById('btn-next').addEventListener('click', async () => {
+      if (step < slides.length - 1) {
+        step++;
+        if (slides[step].login) { mostrarLogin(); return; }
+        document.getElementById('slide-title').textContent = slides[step].title;
+        document.getElementById('slide-desc').textContent = slides[step].desc;
+        document.querySelectorAll('.dot').forEach((d, idx) => {
+          d.style.width = idx === step ? '16px' : '6px';
+          d.style.background = idx === step ? 'var(--accent)' : 'var(--line)';
+        });
+        return;
+      }
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+      const nome = document.getElementById('nome').value.trim();
+      const status = document.getElementById('status-msg');
+
+      if (!email || !senha || (modoCadastro && !nome)) {
+        status.style.color = '#DC2626';
+        status.textContent = 'Preencha todos os campos para continuar.';
+        return;
+      }
+
+      status.style.color = 'var(--accent)';
+      status.textContent = modoCadastro ? 'Criando sua conta...' : 'Verificando acesso...';
+
+      if (modoCadastro) {
+        const { data, error } = await supabaseClient
+          .from('usuarios')
+          .insert({ nome, email, senha })
+          .select()
+          .single();
+
+        if (error) {
+          status.style.color = '#DC2626';
+          status.textContent = 'Este e-mail já está cadastrado.';
+          return;
+        }
+        localStorage.setItem('simbora_user', JSON.stringify(data));
+        window.location.href = 'pesquisar.html';
+      } else {
+        const { data } = await supabaseClient
+          .from('usuarios')
+          .select('*')
+          .eq('email', email)
+          .eq('senha', senha)
+          .single();
+
+        if (data) {
+          localStorage.setItem('simbora_user', JSON.stringify(data));
+          status.style.color = '#28775E';
+          status.textContent = 'Conectado! Redirecionando...';
+          setTimeout(() => { window.location.href = 'pesquisar.html'; }, 500);
+        } else {
+          status.style.color = '#DC2626';
+          status.textContent = 'E-mail ou senha inválidos.';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

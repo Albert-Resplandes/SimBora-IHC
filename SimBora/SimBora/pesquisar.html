@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimBora! — Pesquisar</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="mobile-frame">
+    <div class="screen-scroll">
+      <div class="kicker">Encontre seu próximo rolê</div>
+      <h1 class="title-main" style="margin-top:4px;">Qual é a boa de hoje?</h1>
+
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="busca-input" placeholder="Lugar, bairro ou uma vibe...">
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px;">
+        <span style="color:var(--muted);">📍 Araguaína, TO</span>
+        <a href="#" id="limpar-filtros" style="color:var(--accent); font-weight:600; text-decoration:none;">Limpar filtros</a>
+      </div>
+
+      <h2 class="section-title">Com quem você vai hoje?</h2>
+      <div class="chip-row" id="companhia-row">
+        <button class="chip" data-val="Solo">Solo</button>
+        <button class="chip active" data-val="Encontro / Date">Encontro/Date</button>
+        <button class="chip" data-val="Galera">Galera</button>
+        <button class="chip" data-val="Família">Família</button>
+        <button class="chip" data-val="Trabalho">Trabalho</button>
+      </div>
+
+      <h2 class="section-title">O que você tá a fim?</h2>
+      <div class="cat-grid" id="categoria-grid">
+        <div class="cat-card active" data-cat="Todos"><span>✨</span>Todos</div>
+        <div class="cat-card" data-cat="Bares"><span>🍸</span>Bares</div>
+        <div class="cat-card" data-cat="Cafés"><span>☕</span>Cafés</div>
+        <div class="cat-card" data-cat="Restô"><span>🍴</span>Restô</div>
+        <div class="cat-card" data-cat="Parques"><span>🌲</span>Parques</div>
+      </div>
+
+      <h2 class="section-title">Ajuste a sua vibe</h2>
+      <div class="vibe-box">
+        <div class="vibe-row">
+          <span style="color:var(--muted); font-weight:600;">Barulho</span>
+          <div style="display:flex; gap:6px;" id="filtro-barulho">
+            <button class="chip active" data-vibe="todos" style="padding:5px 10px;">Todos</button>
+            <button class="chip" data-vibe="calmo" style="padding:5px 10px;">Calmo</button>
+            <button class="chip" data-vibe="agitado" style="padding:5px 10px;">Agitado</button>
+          </div>
+        </div>
+        <div class="vibe-row">
+          <span style="color:var(--muted); font-weight:600;">Iluminação</span>
+          <div style="display:flex; gap:6px;" id="filtro-luz">
+            <button class="chip active" data-vibe="todos" style="padding:5px 10px;">Todas</button>
+            <button class="chip" data-vibe="meia-luz" style="padding:5px 10px;">Meia-luz</button>
+            <button class="chip" data-vibe="claro" style="padding:5px 10px;">Claro</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-explorar" style="margin-top:22px;">Explorar lugares →</button>
+    </div>
+  </main>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderBottomNav('pesquisar');
+
+    let filtroCompanhia = 'Encontro / Date';
+    let filtroCategoria = 'Todos';
+    let filtroBarulho = 'todos';
+    let filtroLuz = 'todos';
+
+    document.querySelectorAll('#companhia-row .chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#companhia-row .chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroCompanhia = btn.dataset.val;
+      });
+    });
+
+    document.querySelectorAll('#categoria-grid .cat-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('#categoria-grid .cat-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        filtroCategoria = card.dataset.cat;
+        contarLocais();
+      });
+    });
+
+    document.querySelectorAll('#filtro-barulho .chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#filtro-barulho .chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroBarulho = btn.dataset.vibe;
+        contarLocais();
+      });
+    });
+
+    document.querySelectorAll('#filtro-luz .chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#filtro-luz .chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroLuz = btn.dataset.vibe;
+        contarLocais();
+      });
+    });
+
+    function aplicarQueryFiltros(query) {
+      if (filtroCategoria !== 'Todos') query = query.eq('categoria', filtroCategoria);
+      if (filtroBarulho === 'calmo') query = query.lt('nivel_barulho', 50);
+      if (filtroBarulho === 'agitado') query = query.gte('nivel_barulho', 50);
+      if (filtroLuz === 'meia-luz') query = query.lt('nivel_iluminacao', 50);
+      if (filtroLuz === 'claro') query = query.gte('nivel_iluminacao', 50);
+      return query;
+    }
+
+    async function contarLocais() {
+      let query = supabaseClient.from('locais').select('id', { count: 'exact' });
+      query = aplicarQueryFiltros(query);
+      const { count } = await query;
+      document.getElementById('btn-explorar').textContent = `Explorar ${count ?? 0} lugares →`;
+    }
+
+    document.getElementById('limpar-filtros').addEventListener('click', (e) => {
+      e.preventDefault();
+      filtroCategoria = 'Todos';
+      filtroBarulho = 'todos';
+      filtroLuz = 'todos';
+      document.getElementById('busca-input').value = '';
+      document.querySelectorAll('#categoria-grid .cat-card').forEach((c, i) => c.classList.toggle('active', i === 0));
+      document.querySelectorAll('#filtro-barulho .chip').forEach((b, i) => b.classList.toggle('active', i === 0));
+      document.querySelectorAll('#filtro-luz .chip').forEach((b, i) => b.classList.toggle('active', i === 0));
+      contarLocais();
+      showToast('Filtros limpos!');
+    });
+
+    document.getElementById('btn-explorar').addEventListener('click', () => {
+      const busca = document.getElementById('busca-input').value.trim();
+      localStorage.setItem('simbora_filtros', JSON.stringify({
+        companhia: filtroCompanhia,
+        categoria: filtroCategoria,
+        barulho: filtroBarulho,
+        luz: filtroLuz,
+        busca
+      }));
+      window.location.href = 'descobrir.html';
+    });
+
+    contarLocais();
+  </script>
+</body>
+</html>

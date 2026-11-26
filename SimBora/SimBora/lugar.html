@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimBora! — Detalhes do Lugar</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="mobile-frame">
+    <div class="screen-scroll" style="padding-top:0;">
+      <div id="hero-img" style="height:220px; margin:0 -20px; background-color:#1E1B4B; background-size:cover; background-position:center; position:relative; padding:20px;">
+        <button class="btn-back" onclick="window.location.href='descobrir.html'">←</button>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:16px;">
+        <div>
+          <h1 class="title-main" id="local-nome">Carregando...</h1>
+          <p class="subtitle" id="local-sub"></p>
+        </div>
+        <div style="text-align:right;">
+          <strong style="color:var(--ink); font-size:15px;" id="local-nota">★ 4,8</strong>
+          <p style="font-size:11px; color:var(--muted);" id="local-total">0 avaliações</p>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 class="section-title">Vibe do Lugar</h2>
+        <span style="font-size:11px; color:var(--muted);">Pela comunidade</span>
+      </div>
+      <div class="vibe-box" id="vibe-bars"></div>
+
+      <h2 class="section-title">O que mais comentam</h2>
+      <div id="tags-resumo" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+      <h2 class="section-title">Dicas de Amigo</h2>
+      <div class="tips-grid" id="dicas-container"></div>
+
+      <button class="btn-primary" id="btn-ir-avaliar" style="margin-top:20px;">Avaliar este Lugar</button>
+    </div>
+  </main>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderBottomNav('lugares');
+    const params = new URLSearchParams(window.location.search);
+    const localId = params.get('id') || 1;
+
+    async function carregarDetalhes() {
+      const { data: local } = await supabaseClient
+        .from('locais')
+        .select('*, dicas_amigo(*), local_tags_votos(quantidade_votos, tags_vibe(rotulo))')
+        .eq('id', localId)
+        .single();
+
+      if (!local) return;
+
+      document.getElementById('hero-img').style.backgroundImage = `url('${local.imagem_url}')`;
+      document.getElementById('local-nome').textContent = local.nome;
+      document.getElementById('local-sub').textContent = `${local.categoria} · ${local.bairro} · ${local.faixa_preco}`;
+      document.getElementById('local-nota').textContent = `★ ${String(local.nota_media).replace('.', ',')}`;
+      document.getElementById('local-total').textContent = `${local.total_avaliacoes} avaliações`;
+
+      const metricas = [
+        { nome: 'Barulho', pct: local.nivel_barulho, label: local.nivel_barulho < 50 ? 'Tranquilo' : 'Agitado' },
+        { nome: 'Movimento', pct: local.nivel_movimento, label: 'Na medida' },
+        { nome: 'Iluminação', pct: local.nivel_iluminacao, label: local.nivel_iluminacao < 50 ? 'Meia-luz' : 'Claro' },
+        { nome: 'Atendimento', pct: local.nivel_atendimento, label: 'Rápido' }
+      ];
+
+      document.getElementById('vibe-bars').innerHTML = metricas.map(m => `
+        <div class="vibe-row">
+          <span style="width:82px; color:var(--muted); font-weight:600;">${m.nome}</span>
+          <div class="vibe-track"><div class="vibe-fill" style="width:${m.pct}%;"></div></div>
+          <span style="width:65px; text-align:right; color:var(--ink); font-weight:600;">${m.label}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('tags-resumo').innerHTML = (local.local_tags_votos || []).map(v => `
+        <span class="chip-soft">✓ ${v.tags_vibe.rotulo} · ${v.quantidade_votos}</span>
+      `).join('');
+
+      document.getElementById('dicas-container').innerHTML = (local.dicas_amigo || []).map(d => `
+        <div class="${d.tipo_dica === 'alerta' ? 'tip-card-warn' : 'tip-card-pos'}">
+          ${d.tipo_dica === 'alerta' ? '⚠️' : '💡'} ${d.conteudo}
+        </div>
+      `).join('');
+
+      document.getElementById('btn-ir-avaliar').onclick = () => {
+        window.location.href = `avaliar.html?id=${local.id}&nome=${encodeURIComponent(local.nome)}`;
+      };
+    }
+
+    carregarDetalhes();
+  </script>
+</body>
+</html>
