@@ -23,7 +23,7 @@ Em aplicativos tradicionais de avaliação, uma nota alta não garante que um es
 
 ---
 
-## 🧠 Fundamentos de IHC Aplicados
+## Fundamentos de IHC Aplicados
 
 A interface foi construída a partir do protótipo elaborado no Figma (`390×844 px`), aplicando conceitos teóricos centrais de IHC:
 
@@ -40,7 +40,7 @@ A interface foi construída a partir do protótipo elaborado no Figma (`390×844
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 * **Front-end:** HTML5, CSS3 (CSS Variables nativas reproduzindo o *Design System*), JavaScript (ES6+)
 * **Back-end:** PHP 8+ (com extensão `PDO` e *Prepared Statements*)
@@ -49,7 +49,7 @@ A interface foi construída a partir do protótipo elaborado no Figma (`390×844
 
 ---
 
-## 📂 Estrutura de Diretórios
+## Estrutura de Diretórios
 
 ```text
 simbora/
