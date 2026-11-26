@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimBora! — Favoritos</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="mobile-frame">
+    <div class="screen-scroll">
+      <div class="kicker">Sua lista salva</div>
+      <h1 class="title-main" style="margin:4px 0 16px 0;">Lugares Favoritos</h1>
+      <div id="lista-fav">
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderBottomNav('favoritos');
+    const user = JSON.parse(localStorage.getItem('simbora_user') || '{"id":1}');
+
+    async function carregarFavoritos() {
+      const { data } = await supabaseClient
+        .from('favoritos')
+        .select('id, locais(*)')
+        .eq('usuario_id', user.id);
+
+      const box = document.getElementById('lista-fav');
+      if (!data || data.length === 0) {
+        box.innerHTML = `
+          <div class="empty-state">
+            <p style="font-size:28px; margin-bottom:8px;">🤍</p>
+            <strong style="color:var(--ink);">Nenhum favorito ainda</strong>
+            <p class="subtitle" style="margin-top:6px;">Toque no coração dos lugares na aba Descobrir para salvar seus favoritos.</p>
+          </div>`;
+        return;
+      }
+
+      box.innerHTML = data.map(f => `
+        <article class="venue-card" onclick="window.location.href='lugar.html?id=${f.locais.id}'" style="cursor:pointer;">
+          <div class="venue-cover" style="height:130px; background-image: url('${f.locais.imagem_url}');">
+            <div class="venue-top">
+              <span class="badge-glass">💡 ${f.locais.vibe_principal}</span>
+              <button class="fav-btn" onclick="removerFavorito(event, ${f.id})">💜</button>
+            </div>
+            <div class="venue-bottom">
+              <h3>${f.locais.nome}</h3>
+              <p>${f.locais.categoria} · ${f.locais.bairro} · ${f.locais.faixa_preco}</p>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function removerFavorito(e, favId) {
+      e.stopPropagation();
+      await supabaseClient.from('favoritos').delete().eq('id', favId);
+      showToast('Removido dos favoritos.');
+      carregarFavoritos();
+    }
+
+    carregarFavoritos();
+  </script>
+</body>
+</html>
